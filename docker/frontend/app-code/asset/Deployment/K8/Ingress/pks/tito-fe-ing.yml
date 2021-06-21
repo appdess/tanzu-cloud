@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: tito-dev
+#  annotations:
+#    ncp/rewrite_target: "/"
+  labels:
+    app: tito
+    stage: dev
+spec:
+  rules:
+   - host: tito-dev.cpod-kaps4biz-dc2.az-lab.shwrfr.com #set your ingress URL here
+     http:
+       paths:
+       - path: /tito/*
+         backend:
+           serviceName: titofe-service
+           servicePort: 80

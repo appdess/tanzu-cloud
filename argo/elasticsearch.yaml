@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: elastic
+spec:
+  destination:
+    name: ''
+    namespace: logs
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: ''
+    repoURL: 'https://helm.elastic.co'
+    targetRevision: 7.9.1
+    chart: elasticsearch
+    helm:
+      parameters:
+        - name: antiAffinity
+          value: soft
+        - name: esJavaOpts
+          value: '-Xmx128m -Xms128m'
+        - name: resources.requests.cpu
+          value: 100m
+        - name: resources.requests.memory
+          value: 1Gi
+        - name: volumeClaimTemplate.storageClassName
+          value: default
+        - name: volumeClaimTemplate.resources.requests.storage
+          value: 50Gi
+  project: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

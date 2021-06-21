@@ -1,0 +1,147 @@
+##pre requisite for this BP:
+#working AWS, vsphere, Azure accounts
+#template, flavor, Network profile set
+#NSX policy to block ICMP between VMs having the noping tag in the security scope
+formatVersion: 1
+inputs:
+  cloud:
+    type: string
+    enum:
+      - azure
+      - aws
+      - vsphere
+  code:
+    type: string
+    enum:
+      - V2.2
+      - V2
+      - V1.9.6
+      - 1.8.5
+      - V1.5
+      - V0.5
+    default: V2.2
+  frontendnumber:
+    type: integer
+    enum:
+      - 1
+      - 2
+      - 3
+    default: 1
+  security:
+    type: string
+    enum:
+      - high
+      - low
+  wavefront_proxy:
+    type: string
+    default: wvfp.cpod-vrealizesuite.az-demo.shwrfr.com
+    title: Proxy Wavefront
+  wavefront_port:
+    type: string
+    default: 2878
+    title: Port Wavefront
+resources:
+  DB:
+    type: Cloud.Machine
+    properties:
+      image: CentosV7
+      flavor: small
+      networks:
+        - network: '${resource.Public_Nw.id}'
+          assignment: '${input.cloud == "vsphere" ? "static" : ""}'
+          tags:
+            - key: security
+              value: '${input.security == "high" ? "noping" : "open"}'
+      remoteAccess:
+        authentication: '${self.endpointType == "aws" ? "publicPrivateKey" : "usernamePassword"}'
+        #        sshKey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCzkN9Sbxj9H77Mrt+8QB/NQn+bqR0ZDx6vvoNeGpkeTbaOhL/6cd9zq+ZYx0hNzc2bPLI4S3NQ8CcAt1gdFdIPte38+gnk1+M+z1oqy2sh+TLFz4hBrdJ3JxTWW/b4Yex5uKbscKEjl2WiW+3MQfP5g5pZkWF3AbWQDAEI8BANn80eZU7q4yDMuW4TsCUEuNmrYjaTyi2S6i3WhngaAlZqdQzPvqUh/JTcmwTXx30XmsoVbG9NHEcbTehhoaHuKSCaCN5pBJ5uXEe4Oxjxa3AAU90YorC140Jw5mkQ4/5earNTqggBiI+uxQCHhC867GCyt9rlgJZZ1F0TlUYDymgx imported-openssh-key
+        username: vince
+        password: VMware1!
+      cloudConfig: |
+        packages:
+          - mysql
+          - mariadb-server
+          - mariadb
+        runcmd:
+          - exec &> /tmp/tito_db.log
+          - sudo systemctl enable mariadb.service
+          - sudo systemctl start mariadb.service
+          - mysql -v -u root << EOF
+          - USE mysql;
+          - SELECT user,host FROM user;
+          - GRANT ALL PRIVILEGES ON *.* TO root@'%' WITH GRANT OPTION;
+          - EOF
+        #to update the root password
+          - sudo systemctl stop mariadb.service
+          - sudo mysqld_safe --skip-grant-tables &
+          - sleep 5
+          - mysql -v -u root << EOF
+          - UPDATE mysql.user SET Password=PASSWORD('Tito2016') WHERE User='root';
+          - FLUSH PRIVILEGES;
+          - EOF
+          - sudo mysqladmin -u root -pTito2016 shutdown
+          - sudo systemctl start mariadb.service
+          
+          #create conf DB and table
+          - mysql -v -u root -pTito2016 << EOF
+          - create database if not exists TitoDB;
+          - use TitoDB;
+          - CREATE TABLE TitoTable (id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY, home VARCHAR(50) NOT NULL, work VARCHAR(50) NOT NULL, hour_home_departure VARCHAR(50) NOT NULL, hour_work_departure VARCHAR(50) NOT NULL)
+          - EOF
+  Cloud_LoadBalancer_1:
+    type: Cloud.LoadBalancer
+    properties:
+      count: '${input.frontendnumber > 1 ? 1 : 0}'
+      routes:
+        - protocol: HTTP
+          port: '80'
+          instanceProtocol: HTTP
+          instancePort: '80'
+          healthCheckConfiguration:
+            protocol: HTTP
+            port: '80'
+            urlPath: /
+            intervalSeconds: 60
+            timeoutSeconds: 30
+            unhealthyThreshold: 10
+            healthyThreshold: 2
+      network: '${resource.Public_Nw.id}'
+      instances:
+        - '${resource.front_end.id}'
+      internetFacing: true
+  front_end:
+    type: Cloud.Machine
+    dependsOn:
+      - DB
+    count: '${FrontEndNumber}'
+    properties:
+      image: CentosV7
+      flavor: small
+      count: '${input.frontendnumber}'
+      remoteAccess:
+        authentication: '${self.endpointType == "aws" ? "publicPrivateKey" : "usernamePassword"}'
+        #        sshKey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCzkN9Sbxj9H77Mrt+8QB/NQn+bqR0ZDx6vvoNeGpkeTbaOhL/6cd9zq+ZYx0hNzc2bPLI4S3NQ8CcAt1gdFdIPte38+gnk1+M+z1oqy2sh+TLFz4hBrdJ3JxTWW/b4Yex5uKbscKEjl2WiW+3MQfP5g5pZkWF3AbWQDAEI8BANn80eZU7q4yDMuW4TsCUEuNmrYjaTyi2S6i3WhngaAlZqdQzPvqUh/JTcmwTXx30XmsoVbG9NHEcbTehhoaHuKSCaCN5pBJ5uXEe4Oxjxa3AAU90YorC140Jw5mkQ4/5earNTqggBiI+uxQCHhC867GCyt9rlgJZZ1F0TlUYDymgx imported-openssh-key
+        username: vince
+        password: VMware1!
+      #resourceGroupName: '${input.cloud == "azure" ? "ResourceGroup1" : "vince"}'
+      networks:
+        - network: '${resource.Public_Nw.id}'
+          assignment: '${input.cloud == "vsphere" ? "static" : ""}'
+          tags:
+            - key: security
+              value: '${input.security == "high" ? "noping" : "open"}'
+      cloudConfig: |
+        packages:
+          - git
+        runcmd:
+          - cd /tmp
+          - curl -O https://raw.githubusercontent.com/vmeoc/Tito/master/asset/Deployment/Scripts/Install_Tito_httpd_LIagent_WavefrontConfig_Tracing.sh
+          - chmod 755 Install_Tito_httpd_LIagent_WavefrontConfig_Tracing.sh
+          - /tmp/Install_Tito_httpd_LIagent_WavefrontConfig_Tracing.sh ${input.wavefront_proxy} ${input.wavefront_port} ${input.code} ${resource.DB.networks[0].address}
+          - rm -f /tmp/Install_Tito_httpd_LIagent_WavefrontConfig_Tracing.sh
+  Public_Nw:
+    type: Cloud.Network
+    properties:
+      networkType: existing
+      constraints:
+        - tag: 'cloud:${input.cloud}'

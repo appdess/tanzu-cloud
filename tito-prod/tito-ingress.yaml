@@ -1,0 +1,13 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: tito
+  namespace: tito-prod
+spec:
+  rules:
+  - host: tito.cemeavmc.lab
+    http:
+      paths:
+      - backend:
+          serviceName: titofe-service
+          servicePort: 80

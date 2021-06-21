@@ -1,0 +1,78 @@
+# deployment of the Tito-App
+# new version
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titofe
+  namespace: tito-prod
+  labels:
+    name: tito-fe
+    version: "latest"
+    app: tito
+    tier: frontend
+    stage: prod
+    namespace: tito-prod
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      type: tito-fe
+      version: v1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: tito
+        type: tito-fe
+        version: v1
+        tier: frontend
+    spec:
+      containers:
+        - name: tito
+          image: adess/vmc-demo-k8s:v5
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 80
+          env:
+          - name: TITO_VERSION
+            value: V2
+          - name: TITO_MEMCACHED_SERVICE_HOST # The IP of the Memcached-Service-Host
+            value: $${TITO_MEMCACHED_SERVICE_HOST}
+          - name: TITO_PROMETHEUS_PUSHGATEWAY # The IP of the Memcached-Service-Host
+            value: http://pushgateway-prometheus-pushgateway.default.svc.cluster.local:9091/metrics/job/tito     # the prometheus pushgateway
+          - name: TITO_SQL_SERVICE_SERVICE_HOST # The IP of the Database VM which was setup - look in app code form-result.php for getenv funciton
+            value: mysql # internal service resolved via K8s DNS!
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: titofe-service
+  namespace: tito-prod
+  labels:
+    app: tito
+    tier: frontend
+    stage: prod
+    namespace: tito-prod
+spec:
+  type: LoadBalancer
+  ports:
+    # By default and for convenience, the `targetPort` is set to the same value as the `port` field.
+  - port: 80
+    targetPort: 80
+    # Optional field
+    # By default and for convenience, the Kubernetes control plane will allocate a port from a range (default: 30000-32767)
+  #  nodePort: 30007  
+  selector:                
+    type: tito-fe
+    tier: frontend

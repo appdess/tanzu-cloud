@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kibana
+spec:
+  destination:
+    name: ''
+    namespace: logs
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: ''
+    repoURL: 'https://helm.elastic.co'
+    targetRevision: 7.9.1
+    chart: kibana
+    helm:
+      parameters:
+        - name: 'ingress.hosts[0]'
+          value: kibana.set.local
+        - name: ingress.enabled
+          value: 'true'
+        - name: resources.requests.cpu
+          value: 500m
+        - name: resources.requests.memory
+          value: 1Gi
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

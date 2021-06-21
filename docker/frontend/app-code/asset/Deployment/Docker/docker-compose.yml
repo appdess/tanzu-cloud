@@ -1,0 +1,27 @@
+version: '2.3' # this is just creating a mssql Database on the host so it´s acting as db standalone!
+services:
+  Tito-SQL:
+    #image: vmeoc/tito-sql:V1.5
+    build:
+      context: ./tito-sql
+    image: tito-sql
+    ports:
+      - 3306:3306
+    network_mode: "host"
+    container_name: Tito-SQL
+    mem_limit: 150m
+    cpus: 0.50
+    cpu_percent: 10
+    restart: always
+    healthcheck:
+      test: "mysql --user=root --password=VMware1! --database=TitoDB -e 'select count(*) from TitoTable'"
+      interval: 1s
+      retries: 120
+    environment:
+      MYSQL_ROOT_PASSWORD: VMware1!
+    # Uncomment following two lines to allow for local access/troubleshooting
+    #ports:
+    #  - "3306:3306"
+#removed until automated volume deployment is available
+#    volumes:
+#      - "./data/db:/var/lib/mysql"
