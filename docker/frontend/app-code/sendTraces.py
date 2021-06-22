@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# adess 06/21
 # sendTraces.py [request_duration] [home_address] [work_address]
 
 import requests
