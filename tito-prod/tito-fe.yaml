@@ -39,7 +39,7 @@ spec:
           - name: TITO_VERSION
             value: V2
           - name: TITO_MEMCACHED_SERVICE_HOST # The IP of the Memcached-Service-Host
-            value: # titocache-tf.fzbixc.cfg.euc1.cache.amazonaws.com
+            value: titocache-tf.fzbixc.cfg.euc1.cache.amazonaws.com
           - name: TITO_PROMETHEUS_PUSHGATEWAY # The IP of the Memcached-Service-Host
             value: http://pushgateway-prometheus-pushgateway.default.svc.cluster.local:9091/metrics/job/tito     # the prometheus pushgateway
           - name: TITO_SQL_SERVICE_SERVICE_HOST # The IP of the Database VM which was setup - look in app code form-result.php for getenv funciton
