@@ -20,7 +20,7 @@ error_log(print_r($logLine, TRUE));
 $time_after=microtime(true);
 
 
-# send traces to wavefront
+# send traces to prometheus
 $home_addr_no_space = preg_replace('/\s+/', '', $params['home_addr']);
 $home_addr_no_space = preg_replace('/[\x00-\x1F\x7F]/', '', $home_addr_no_space);
 #$home_addr_no_space = utf8_decode($home_addr_no_space);
