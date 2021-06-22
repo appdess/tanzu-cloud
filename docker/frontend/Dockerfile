@@ -21,7 +21,7 @@ RUN wget -O /tmp/latest-64bit https://elasticache-downloads.s3.amazonaws.com/Clu
 
 
 # clone app code to apache-directory
-COPY app-code/ /var/www/html/; 
+COPY app-code/ /var/www/html/
 
 
 

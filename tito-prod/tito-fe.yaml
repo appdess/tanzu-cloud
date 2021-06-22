@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: tito
-          image: adess/vmc-demo-k8s:v5
+          image: adess/vmc-demo-k8s:v1
           imagePullPolicy: Always
           ports:
           - containerPort: 80
@@ -39,7 +39,7 @@ spec:
           - name: TITO_VERSION
             value: V2
           - name: TITO_MEMCACHED_SERVICE_HOST # The IP of the Memcached-Service-Host
-            value: $${TITO_MEMCACHED_SERVICE_HOST}
+            value: memcached
           - name: TITO_PROMETHEUS_PUSHGATEWAY # The IP of the Memcached-Service-Host
             value: http://pushgateway-prometheus-pushgateway.default.svc.cluster.local:9091/metrics/job/tito     # the prometheus pushgateway
           - name: TITO_SQL_SERVICE_SERVICE_HOST # The IP of the Database VM which was setup - look in app code form-result.php for getenv funciton
